@@ -50,6 +50,8 @@ Thunderbird.)
 |---|---|
 | Durée par défaut de la réunion | 60 min |
 | Reprendre le corps du mail dans la description | oui |
+| M'ajouter en tant que participant (statut accepté) | oui |
+| Boutons dans l'en-tête du message | oui |
 | Préfixe des salles kMeet | `meet-` |
 | Longueur du suffixe aléatoire | 12 |
 | URL de base | `https://kmeet.infomaniak.com/` |

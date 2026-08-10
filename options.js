@@ -6,6 +6,8 @@ const DEFAULTS = {
   kmeetSlugLen: 12,
   durationMin: 60,
   includeBody: true,
+  addSelf: true,
+  headerButtons: true,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -17,6 +19,8 @@ async function restore() {
   $("kmeetSlugLen").value = s.kmeetSlugLen;
   $("durationMin").value = s.durationMin;
   $("includeBody").checked = s.includeBody;
+  $("addSelf").checked = s.addSelf;
+  $("headerButtons").checked = s.headerButtons;
 }
 
 async function save() {
@@ -30,6 +34,8 @@ async function save() {
     kmeetSlugLen: Math.min(32, Math.max(4, parseInt($("kmeetSlugLen").value, 10) || 12)),
     durationMin: Math.min(1440, Math.max(5, parseInt($("durationMin").value, 10) || 60)),
     includeBody: $("includeBody").checked,
+    addSelf: $("addSelf").checked,
+    headerButtons: $("headerButtons").checked,
   });
   $("status").textContent = "Enregistré ✓";
   setTimeout(() => ($("status").textContent = ""), 2000);

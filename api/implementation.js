@@ -130,6 +130,11 @@ const HDR_KMEET_ID = "rwm-hdr-kmeet";
 // Boutons dans la barre d'actions de l'en-tête du message (about:message).
 function addHeaderButtons(doc, labels, extension) {
   const toolbar = doc.getElementById("header-view-toolbar");
+  if (labels.showButtons === false) {
+    doc.getElementById(HDR_PLAIN_ID)?.remove();
+    doc.getElementById(HDR_KMEET_ID)?.remove();
+    return;
+  }
   if (!toolbar || doc.getElementById(HDR_PLAIN_ID)) {
     return;
   }
@@ -212,7 +217,28 @@ function startMenuObserver(labels, extension) {
       if (doc.documentURI !== "about:3pane" && doc.documentURI !== "about:message") {
         return;
       }
-      doc.addEventListener("DOMContentLoaded", () => inject(doc), { once: true });
+      // Après le chargement complet + un délai : la barre d'en-tête
+      // personnalisable (currentset) est reconstruite au load et écraserait
+      // des boutons injectés trop tôt.
+      doc.addEventListener(
+        "DOMContentLoaded",
+        () => {
+          const win = doc.defaultView;
+          if (!win) {
+            return;
+          }
+          if (doc.readyState === "complete") {
+            win.setTimeout(() => inject(doc), 200);
+          } else {
+            win.addEventListener(
+              "load",
+              () => win.setTimeout(() => inject(doc), 200),
+              { once: true }
+            );
+          }
+        },
+        { once: true }
+      );
     },
   };
   Services.obs.addObserver(menuObserver, "document-element-inserted");
@@ -401,8 +427,8 @@ this.calMeeting = class extends ExtensionCommon.ExtensionAPI {
               attendee.commonName = a.name;
             }
             attendee.role = "REQ-PARTICIPANT";
-            attendee.participationStatus = "NEEDS-ACTION";
-            attendee.rsvp = "TRUE";
+            attendee.participationStatus = a.isSelf ? "ACCEPTED" : "NEEDS-ACTION";
+            attendee.rsvp = a.isSelf ? "FALSE" : "TRUE";
             event.addAttendee(attendee);
           }
 

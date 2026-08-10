@@ -6,6 +6,8 @@ const DEFAULTS = {
   kmeetSlugLen: 12,
   durationMin: 60,
   includeBody: true,
+  addSelf: true,
+  headerButtons: true,
 };
 
 let settings = { ...DEFAULTS };
@@ -70,12 +72,13 @@ function extractText(part) {
   return "";
 }
 
-async function ownEmails() {
-  const own = new Set();
+// Toutes les identités du profil : email (minuscules) -> nom d'affichage.
+async function ownIdentities() {
+  const own = new Map();
   for (const account of await browser.accounts.list(true)) {
     for (const identity of account.identities || []) {
       if (identity.email) {
-        own.add(identity.email.toLowerCase());
+        own.set(identity.email.toLowerCase(), identity.name || "");
       }
     }
   }
@@ -83,20 +86,34 @@ async function ownEmails() {
 }
 
 async function openMeeting(msg, withKmeet) {
-  const own = await ownEmails();
+  const own = await ownIdentities();
   const seen = new Set();
   const attendees = [];
+  let selfEmail = null;
   for (const raw of [msg.author, ...(msg.recipients || []), ...(msg.ccList || [])]) {
     const addr = parseAddr(raw);
     if (!addr) {
       continue;
     }
     const key = addr.email.toLowerCase();
-    if (own.has(key) || seen.has(key)) {
+    if (own.has(key)) {
+      // Identité du profil visée par ce mail : candidate pour "s'ajouter".
+      selfEmail = selfEmail || key;
+      continue;
+    }
+    if (seen.has(key)) {
       continue;
     }
     seen.add(key);
     attendees.push(addr);
+  }
+  if (settings.addSelf) {
+    if (!selfEmail) {
+      selfEmail = own.keys().next().value || null;
+    }
+    if (selfEmail) {
+      attendees.push({ email: selfEmail, name: own.get(selfEmail) || "", isSelf: true });
+    }
   }
 
   let body = "";
@@ -137,21 +154,27 @@ browser.calMeeting.onMeetingRequested.addListener((msg, withKmeet) => {
   );
 });
 
+function menuConfig() {
+  return {
+    labelPlain: "Répondre par une réunion",
+    labelKmeet: "Répondre par une réunion kMeet",
+    buttonPlain: "Réunion",
+    buttonKmeet: "kMeet",
+    showButtons: settings.headerButtons,
+  };
+}
+
 browser.storage.onChanged.addListener(async (changes, area) => {
   if (area !== "local") {
     return;
   }
   settings = await browser.storage.local.get(DEFAULTS);
+  browser.calMeeting.initContextMenu(menuConfig()).catch(() => {});
   browser.calMeeting.initKmeetButton(kmeetConfig()).catch(() => {});
 });
 
 (async () => {
   settings = await browser.storage.local.get(DEFAULTS);
-  await browser.calMeeting.initContextMenu({
-    labelPlain: "Répondre par une réunion",
-    labelKmeet: "Répondre par une réunion kMeet",
-    buttonPlain: "Réunion",
-    buttonKmeet: "kMeet",
-  });
+  await browser.calMeeting.initContextMenu(menuConfig());
   await browser.calMeeting.initKmeetButton(kmeetConfig());
 })().catch((e) => console.error("ReplyWithMeeting: init", e));

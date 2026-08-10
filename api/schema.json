@@ -26,7 +26,8 @@
               "labelPlain": { "type": "string" },
               "labelKmeet": { "type": "string" },
               "buttonPlain": { "type": "string", "optional": true },
-              "buttonKmeet": { "type": "string", "optional": true }
+              "buttonKmeet": { "type": "string", "optional": true },
+              "showButtons": { "type": "boolean", "optional": true }
             }
           }
         ]
@@ -69,7 +70,8 @@
                   "type": "object",
                   "properties": {
                     "email": { "type": "string" },
-                    "name": { "type": "string", "optional": true }
+                    "name": { "type": "string", "optional": true },
+                    "isSelf": { "type": "boolean", "optional": true }
                   }
                 }
               }
