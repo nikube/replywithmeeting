@@ -2,7 +2,7 @@
 
 const DEFAULTS = {
   kmeetBase: "https://kmeet.infomaniak.com/",
-  kmeetPrefix: "anatole-",
+  kmeetPrefix: "meet-",
   kmeetSlugLen: 12,
   durationMin: 60,
   includeBody: true,

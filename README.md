@@ -46,7 +46,7 @@ Thunderbird.)
 |---|---|
 | Durée par défaut de la réunion | 60 min |
 | Reprendre le corps du mail dans la description | oui |
-| Préfixe des salles kMeet | `anatole-` |
+| Préfixe des salles kMeet | `meet-` |
 | Longueur du suffixe aléatoire | 12 |
 | URL de base | `https://kmeet.infomaniak.com/` |
 

@@ -118,7 +118,7 @@ function makeKmeetUrl(win, config) {
     slug += cs[b % cs.length];
   }
   return (config.base || "https://kmeet.infomaniak.com/") +
-    (config.prefix || "anatole-") + slug;
+    (config.prefix || "meet-") + slug;
 }
 
 function addKmeetButton(doc, config) {
