@@ -1,5 +1,7 @@
 # Reply with Meeting
 
+*[English below](#english)*
+
 Module Thunderbird/Betterbird qui apporte l'équivalent du « Répondre par une
 réunion » d'Outlook, avec en bonus la visio [kMeet](https://kmeet.infomaniak.com)
 d'Infomaniak (gratuite, illimitée, sans compte) en un clic.
@@ -100,6 +102,34 @@ Console d'erreurs : `Ctrl+Maj+J`, filtre `ReplyWithMeeting`.
   onglet ».
 - L'Experiment API dépend d'internes Thunderbird non garantis entre versions
   majeures — à re-tester à chaque montée d'ESR.
+
+## English
+
+**Reply with Meeting** brings Outlook's "Reply with Meeting" to
+Thunderbird/Betterbird — with one-click [kMeet](https://kmeet.infomaniak.com)
+video rooms (Infomaniak's free, unlimited, no-account video-conferencing).
+
+Right-click any message and pick one of two top-level entries:
+
+- **Reply with a meeting** — opens the new-event dialog pre-filled with the
+  sender and all To/Cc recipients as attendees (your own identities excluded),
+  the subject as title and the message body as description;
+- **Reply with a kMeet meeting** — same, plus a kMeet room URL as event
+  location and at the top of the description. The room is a plain URL — no
+  account, no token, no API call; kMeet creates it when the first participant
+  opens the link.
+
+Also included: **Meeting** / **kMeet** buttons in the message header toolbar, a
+**kMeet button** next to the Location field of the event dialog, and an options
+page (default duration, room prefix, add yourself as attendee, toggle buttons).
+Saving the event triggers Thunderbird's standard iMIP invitation flow, so
+recipients get a regular calendar invite whatever their client.
+
+To our knowledge this is the first kMeet integration for Thunderbird.
+Install from the [latest release](https://github.com/nikube/replywithmeeting/releases)
+(`.xpi`), via *Tools → Add-ons → Install Add-on From File*. Compatible with
+Thunderbird 115–140+; the "full access" warning is expected (Experiment API —
+stable WebExtension APIs cannot create calendar events).
 
 ## Marques
 
