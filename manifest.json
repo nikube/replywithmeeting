@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Reply with Meeting",
   "description": "Répondre à un mail par une réunion : événement pré-rempli avec les destinataires en participants, et visio kMeet en un clic.",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "author": "Nicolas Zaoui",
   "homepage_url": "https://github.com/nikube/replywithmeeting",
   "applications": {

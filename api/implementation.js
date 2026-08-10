@@ -16,6 +16,8 @@ const MENU_KMEET_ID = "rwm-menu-kmeet";
 // Abonnés à onMeetingRequested (fire objects du background).
 const menuListeners = new Set();
 
+let dialogListenerRegistered = false;
+
 function loadCalUtils() {
   // TB 128+ : ESM ; TB 115 : JSM.
   try {
@@ -127,6 +129,9 @@ function addMenuItems(doc, labels, extension) {
 const HDR_PLAIN_ID = "rwm-hdr-plain";
 const HDR_KMEET_ID = "rwm-hdr-kmeet";
 
+// Config courante du menu/boutons (mise à jour par initContextMenu).
+let currentLabels = null;
+
 // Boutons dans la barre d'actions de l'en-tête du message (about:message).
 function addHeaderButtons(doc, labels, extension) {
   const toolbar = doc.getElementById("header-view-toolbar");
@@ -169,6 +174,29 @@ function addHeaderButtons(doc, labels, extension) {
   } else {
     toolbar.append(plain, kmeet);
   }
+  console.log("ReplyWithMeeting: boutons d'en-tête injectés dans", doc.documentURI);
+
+  // La barre peut être reconstruite (personnalisation currentset, mises à
+  // jour d'affichage) : on surveille et on ré-injecte si nos boutons
+  // disparaissent.
+  if (!win._rwmToolbarMO) {
+    const toolbox = doc.getElementById("header-view-toolbox") || toolbar.parentNode;
+    const mo = new win.MutationObserver(() => {
+      if (
+        currentLabels &&
+        currentLabels.showButtons !== false &&
+        !doc.getElementById(HDR_PLAIN_ID)
+      ) {
+        try {
+          addHeaderButtons(doc, currentLabels, extension);
+        } catch (e) {
+          console.error("ReplyWithMeeting: ré-injection boutons", e);
+        }
+      }
+    });
+    mo.observe(toolbox, { childList: true, subtree: true });
+    win._rwmToolbarMO = mo;
+  }
 }
 
 // Tous les documents about:3pane / about:message actuellement chargés.
@@ -198,6 +226,7 @@ let menuObserver = null;
 
 function startMenuObserver(labels, extension) {
   stopMenuObserver();
+  currentLabels = labels;
   const inject = (doc) => {
     try {
       addMenuItems(doc, labels, extension);
@@ -207,7 +236,12 @@ function startMenuObserver(labels, extension) {
     }
   };
   // Documents déjà ouverts…
-  for (const doc of mailContextDocs()) {
+  const found = [...mailContextDocs()];
+  console.log(
+    "ReplyWithMeeting: documents à l'init :",
+    found.map((d) => d.documentURI).join(", ") || "(aucun)"
+  );
+  for (const doc of found) {
     inject(doc);
   }
   // …et tous ceux qui se chargeront (nouveaux onglets, fenêtres, rechargements).
@@ -257,6 +291,11 @@ function stopMenuObserver() {
 
 function removeMenuItems() {
   for (const doc of mailContextDocs()) {
+    const win = doc.defaultView;
+    if (win?._rwmToolbarMO) {
+      win._rwmToolbarMO.disconnect();
+      delete win._rwmToolbarMO;
+    }
     for (const id of [MENU_PLAIN_ID, MENU_KMEET_ID, HDR_PLAIN_ID, HDR_KMEET_ID]) {
       doc.getElementById(id)?.remove();
     }
@@ -327,11 +366,13 @@ function hookDialogWindow(win, config) {
 
 this.calMeeting = class extends ExtensionCommon.ExtensionAPI {
   onShutdown() {
-    const support = loadExtensionSupport();
-    try {
-      support.unregisterWindowListener(DIALOG_LISTENER_ID);
-    } catch (e) {
-      // jamais enregistré : rien à faire
+    if (dialogListenerRegistered) {
+      try {
+        loadExtensionSupport().unregisterWindowListener(DIALOG_LISTENER_ID);
+      } catch (e) {
+        // déjà retiré
+      }
+      dialogListenerRegistered = false;
     }
     stopMenuObserver();
     removeMenuItems();
@@ -359,11 +400,14 @@ this.calMeeting = class extends ExtensionCommon.ExtensionAPI {
 
         async initKmeetButton(config) {
           const support = loadExtensionSupport();
-          try {
-            support.unregisterWindowListener(DIALOG_LISTENER_ID);
-          } catch (e) {
-            // premier enregistrement
+          if (dialogListenerRegistered) {
+            try {
+              support.unregisterWindowListener(DIALOG_LISTENER_ID);
+            } catch (e) {
+              // déjà retiré
+            }
           }
+          dialogListenerRegistered = true;
           support.registerWindowListener(DIALOG_LISTENER_ID, {
             chromeURLs: [
               "chrome://calendar/content/calendar-event-dialog.xhtml",
