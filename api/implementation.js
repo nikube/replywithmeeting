@@ -235,14 +235,29 @@ function startMenuObserver(labels, extension) {
       console.error("ReplyWithMeeting: injection", e);
     }
   };
+  // Injecte tout de suite si le document est prêt, sinon après son load
+  // (au démarrage, les onglets restaurés existent avant d'être chargés).
+  const injectWhenReady = (doc) => {
+    const win = doc.defaultView;
+    if (doc.readyState === "complete") {
+      inject(doc);
+    } else if (win) {
+      win.addEventListener(
+        "load",
+        () => win.setTimeout(() => inject(doc), 200),
+        { once: true }
+      );
+    }
+  };
+
   // Documents déjà ouverts…
   const found = [...mailContextDocs()];
   console.log(
     "ReplyWithMeeting: documents à l'init :",
-    found.map((d) => d.documentURI).join(", ") || "(aucun)"
+    found.map((d) => `${d.documentURI}[${d.readyState}]`).join(", ") || "(aucun)"
   );
   for (const doc of found) {
-    inject(doc);
+    injectWhenReady(doc);
   }
   // …et tous ceux qui se chargeront (nouveaux onglets, fenêtres, rechargements).
   menuObserver = {
