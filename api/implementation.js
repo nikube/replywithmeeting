@@ -10,7 +10,6 @@ var { ExtensionError } = ExtensionUtils;
 var { EventManager } = ExtensionCommon;
 
 const DIALOG_LISTENER_ID = "replywithmeeting-event-dialog";
-const MENU_LISTENER_ID = "replywithmeeting-mail-context";
 const MENU_PLAIN_ID = "rwm-menu-plain";
 const MENU_KMEET_ID = "rwm-menu-kmeet";
 
@@ -39,28 +38,30 @@ function loadExtensionSupport() {
   }
 }
 
-/* ---------- menu contextuel des messages ---------- */
+/* ---------- menu contextuel des messages ----------
+ * Depuis TB 115, #mailContext vit dans les sous-documents about:3pane
+ * (liste des messages) et about:message (lecteur), pas dans messenger.xhtml.
+ */
 
-// nsIMsgHdr du message visé : liste des messages, ou message affiché.
+// nsIMsgHdr du message visé, depuis la fenêtre du sous-document.
 function selectedMsgHdr(win) {
-  const tabmail = win.document.getElementById("tabmail");
   try {
-    const hdr = tabmail?.currentAbout3Pane?.gDBView?.hdrForFirstSelectedMessage;
+    const hdr = win.gDBView?.hdrForFirstSelectedMessage;
     if (hdr) {
       return hdr;
     }
   } catch (e) {
     // pas de sélection dans la liste
   }
-  return tabmail?.currentAboutMessage?.gMessage || null;
+  return win.gMessage || null;
 }
 
-function addMenuItems(win, labels, extension) {
-  const doc = win.document;
+function addMenuItems(doc, labels, extension) {
   const popup = doc.getElementById("mailContext");
   if (!popup || doc.getElementById(MENU_PLAIN_ID)) {
     return;
   }
+  const win = doc.defaultView;
 
   const make = (id, label, withKmeet) => {
     const item = doc.createXULElement("menuitem");
@@ -101,9 +102,80 @@ function addMenuItems(win, labels, extension) {
   });
 }
 
-function removeMenuItems(win) {
-  for (const id of [MENU_PLAIN_ID, MENU_KMEET_ID]) {
-    win.document.getElementById(id)?.remove();
+// Tous les documents about:3pane / about:message actuellement chargés.
+function* mailContextDocs() {
+  for (const win of Services.wm.getEnumerator("mail:3pane")) {
+    const tabmail = win.document.getElementById("tabmail");
+    for (const tab of tabmail?.tabInfo || []) {
+      const cw = tab.chromeBrowser?.contentWindow;
+      if (cw?.document) {
+        yield cw.document;
+        const mb = cw.document.getElementById("messageBrowser")?.contentWindow;
+        if (mb?.document) {
+          yield mb.document;
+        }
+      }
+    }
+  }
+  for (const win of Services.wm.getEnumerator("mail:messageWindow")) {
+    const mb = win.document.getElementById("messageBrowser")?.contentWindow;
+    if (mb?.document) {
+      yield mb.document;
+    }
+  }
+}
+
+let menuObserver = null;
+
+function startMenuObserver(labels, extension) {
+  stopMenuObserver();
+  // Documents déjà ouverts…
+  for (const doc of mailContextDocs()) {
+    try {
+      addMenuItems(doc, labels, extension);
+    } catch (e) {
+      console.error("ReplyWithMeeting: injection menu", e);
+    }
+  }
+  // …et tous ceux qui se chargeront (nouveaux onglets, fenêtres, rechargements).
+  menuObserver = {
+    observe(subject) {
+      const doc = subject;
+      if (doc.documentURI !== "about:3pane" && doc.documentURI !== "about:message") {
+        return;
+      }
+      doc.addEventListener(
+        "DOMContentLoaded",
+        () => {
+          try {
+            addMenuItems(doc, labels, extension);
+          } catch (e) {
+            console.error("ReplyWithMeeting: injection menu", e);
+          }
+        },
+        { once: true }
+      );
+    },
+  };
+  Services.obs.addObserver(menuObserver, "document-element-inserted");
+}
+
+function stopMenuObserver() {
+  if (menuObserver) {
+    try {
+      Services.obs.removeObserver(menuObserver, "document-element-inserted");
+    } catch (e) {
+      // déjà retiré
+    }
+    menuObserver = null;
+  }
+}
+
+function removeMenuItems() {
+  for (const doc of mailContextDocs()) {
+    for (const id of [MENU_PLAIN_ID, MENU_KMEET_ID]) {
+      doc.getElementById(id)?.remove();
+    }
   }
 }
 
@@ -172,16 +244,13 @@ function hookDialogWindow(win, config) {
 this.calMeeting = class extends ExtensionCommon.ExtensionAPI {
   onShutdown() {
     const support = loadExtensionSupport();
-    for (const id of [DIALOG_LISTENER_ID, MENU_LISTENER_ID]) {
-      try {
-        support.unregisterWindowListener(id);
-      } catch (e) {
-        // jamais enregistré : rien à faire
-      }
+    try {
+      support.unregisterWindowListener(DIALOG_LISTENER_ID);
+    } catch (e) {
+      // jamais enregistré : rien à faire
     }
-    for (const win of Services.wm.getEnumerator("mail:3pane")) {
-      removeMenuItems(win);
-    }
+    stopMenuObserver();
+    removeMenuItems();
     menuListeners.clear();
   }
 
@@ -201,18 +270,7 @@ this.calMeeting = class extends ExtensionCommon.ExtensionAPI {
         }).api(),
 
         async initContextMenu(labels) {
-          const support = loadExtensionSupport();
-          try {
-            support.unregisterWindowListener(MENU_LISTENER_ID);
-          } catch (e) {
-            // premier enregistrement
-          }
-          support.registerWindowListener(MENU_LISTENER_ID, {
-            chromeURLs: ["chrome://messenger/content/messenger.xhtml"],
-            onLoadWindow(win) {
-              addMenuItems(win, labels, extension);
-            },
-          });
+          startMenuObserver(labels, extension);
         },
 
         async initKmeetButton(config) {
