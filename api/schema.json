@@ -24,7 +24,9 @@
             "type": "object",
             "properties": {
               "labelPlain": { "type": "string" },
-              "labelKmeet": { "type": "string" }
+              "labelKmeet": { "type": "string" },
+              "buttonPlain": { "type": "string", "optional": true },
+              "buttonKmeet": { "type": "string", "optional": true }
             }
           }
         ]

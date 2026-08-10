@@ -150,6 +150,8 @@ browser.storage.onChanged.addListener(async (changes, area) => {
   await browser.calMeeting.initContextMenu({
     labelPlain: "Répondre par une réunion",
     labelKmeet: "Répondre par une réunion kMeet",
+    buttonPlain: "Réunion",
+    buttonKmeet: "kMeet",
   });
   await browser.calMeeting.initKmeetButton(kmeetConfig());
 })().catch((e) => console.error("ReplyWithMeeting: init", e));

@@ -56,6 +56,26 @@ function selectedMsgHdr(win) {
   return win.gMessage || null;
 }
 
+// Icône calendrier native (context-fill) pour l'entrée sans kMeet.
+const CALENDAR_ICON = "chrome://messenger/skin/icons/new/compact/calendar.svg";
+
+function kIconUrl(extension) {
+  return extension.baseURI.resolve("icon.svg");
+}
+
+function fireMeeting(win, extension, withKmeet) {
+  return (async () => {
+    const hdr = selectedMsgHdr(win);
+    if (!hdr) {
+      return;
+    }
+    const message = await extension.messageManager.convert(hdr);
+    for (const fire of menuListeners) {
+      fire.async(message, withKmeet);
+    }
+  })().catch((e) => console.error("ReplyWithMeeting: action réunion", e));
+}
+
 function addMenuItems(doc, labels, extension) {
   const popup = doc.getElementById("mailContext");
   if (!popup || doc.getElementById(MENU_PLAIN_ID)) {
@@ -63,10 +83,12 @@ function addMenuItems(doc, labels, extension) {
   }
   const win = doc.defaultView;
 
-  const make = (id, label, withKmeet) => {
+  const make = (id, label, withKmeet, icon) => {
     const item = doc.createXULElement("menuitem");
     item.id = id;
     item.setAttribute("label", label);
+    item.className = "menuitem-iconic";
+    item.setAttribute("image", icon);
     item.addEventListener("command", async () => {
       try {
         const hdr = selectedMsgHdr(win);
@@ -84,8 +106,8 @@ function addMenuItems(doc, labels, extension) {
     return item;
   };
 
-  const plain = make(MENU_PLAIN_ID, labels.labelPlain, false);
-  const kmeet = make(MENU_KMEET_ID, labels.labelKmeet, true);
+  const plain = make(MENU_PLAIN_ID, labels.labelPlain, false, CALENDAR_ICON);
+  const kmeet = make(MENU_KMEET_ID, labels.labelKmeet, true, kIconUrl(extension));
 
   // Au premier niveau, après le bloc répondre/transférer si présent.
   const ref = doc.getElementById("mailContext-forwardAsMenu");
@@ -100,6 +122,48 @@ function addMenuItems(doc, labels, extension) {
     plain.hidden = !visible;
     kmeet.hidden = !visible;
   });
+}
+
+const HDR_PLAIN_ID = "rwm-hdr-plain";
+const HDR_KMEET_ID = "rwm-hdr-kmeet";
+
+// Boutons dans la barre d'actions de l'en-tête du message (about:message).
+function addHeaderButtons(doc, labels, extension) {
+  const toolbar = doc.getElementById("header-view-toolbar");
+  if (!toolbar || doc.getElementById(HDR_PLAIN_ID)) {
+    return;
+  }
+  const win = doc.defaultView;
+
+  const make = (id, label, tooltip, icon, withKmeet) => {
+    const btn = doc.createXULElement("toolbarbutton");
+    btn.id = id;
+    btn.setAttribute("label", label);
+    btn.setAttribute("tooltiptext", tooltip);
+    btn.className = "toolbarbutton-1 message-header-view-button";
+    btn.setAttribute(
+      "style",
+      `list-style-image: url(${icon}); fill: var(--toolbarbutton-icon-fill, currentColor);`
+    );
+    btn.addEventListener("command", () => fireMeeting(win, extension, withKmeet));
+    return btn;
+  };
+
+  const plain = make(
+    HDR_PLAIN_ID, labels.buttonPlain || "Réunion", labels.labelPlain,
+    CALENDAR_ICON, false
+  );
+  const kmeet = make(
+    HDR_KMEET_ID, labels.buttonKmeet || "kMeet", labels.labelKmeet,
+    kIconUrl(extension), true
+  );
+
+  const ref = doc.getElementById("hdrForwardButton");
+  if (ref) {
+    ref.after(plain, kmeet);
+  } else {
+    toolbar.append(plain, kmeet);
+  }
 }
 
 // Tous les documents about:3pane / about:message actuellement chargés.
@@ -129,13 +193,17 @@ let menuObserver = null;
 
 function startMenuObserver(labels, extension) {
   stopMenuObserver();
-  // Documents déjà ouverts…
-  for (const doc of mailContextDocs()) {
+  const inject = (doc) => {
     try {
       addMenuItems(doc, labels, extension);
+      addHeaderButtons(doc, labels, extension);
     } catch (e) {
-      console.error("ReplyWithMeeting: injection menu", e);
+      console.error("ReplyWithMeeting: injection", e);
     }
+  };
+  // Documents déjà ouverts…
+  for (const doc of mailContextDocs()) {
+    inject(doc);
   }
   // …et tous ceux qui se chargeront (nouveaux onglets, fenêtres, rechargements).
   menuObserver = {
@@ -144,17 +212,7 @@ function startMenuObserver(labels, extension) {
       if (doc.documentURI !== "about:3pane" && doc.documentURI !== "about:message") {
         return;
       }
-      doc.addEventListener(
-        "DOMContentLoaded",
-        () => {
-          try {
-            addMenuItems(doc, labels, extension);
-          } catch (e) {
-            console.error("ReplyWithMeeting: injection menu", e);
-          }
-        },
-        { once: true }
-      );
+      doc.addEventListener("DOMContentLoaded", () => inject(doc), { once: true });
     },
   };
   Services.obs.addObserver(menuObserver, "document-element-inserted");
@@ -173,7 +231,7 @@ function stopMenuObserver() {
 
 function removeMenuItems() {
   for (const doc of mailContextDocs()) {
-    for (const id of [MENU_PLAIN_ID, MENU_KMEET_ID]) {
+    for (const id of [MENU_PLAIN_ID, MENU_KMEET_ID, HDR_PLAIN_ID, HDR_KMEET_ID]) {
       doc.getElementById(id)?.remove();
     }
   }

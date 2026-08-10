@@ -1,8 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="8" fill="#0092ff"/>
+  <!-- Géométrie relevée sur le favicon officiel 64x64 d'infomaniak.com
+       (fût 13x53, bras et jambe à coupes horizontales), glyphe recentré. -->
+  <rect width="64" height="64" rx="6" fill="#0092ff"/>
   <g fill="#ffffff">
-    <polygon points="16,9 27,9 27,55 16,55"/>
-    <polygon points="27,33 43,19 56,19 36,37 27,42"/>
-    <polygon points="33,39 57,55 43,55 27,44 27,33"/>
+    <rect x="12" y="5.5" width="13" height="53"/>
+    <polygon points="34,26.5 49,26.5 25,50.5 25,35.5"/>
+    <polygon points="38.3,37.1 50.5,58.5 37,58.5 29.9,45.7"/>
   </g>
 </svg>

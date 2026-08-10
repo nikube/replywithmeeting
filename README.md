@@ -20,6 +20,10 @@ Pré-remplissage :
   10 000 caractères — désactivable dans les paramètres ;
 - **Créneau** : prochaine demi-heure, durée configurable (1 h par défaut).
 
+Deux boutons **« Réunion »** et **« kMeet »** (avec icônes) sont aussi ajoutés à
+la barre d'actions de l'en-tête du message, à côté de Répondre/Transférer —
+mêmes actions que les entrées du menu contextuel.
+
 Un bouton **« 📹 kMeet »** est aussi injecté à côté du champ Lieu de la fenêtre
 d'édition d'événement (y compris pour les événements créés nativement) : un clic
 génère une salle et remplit le champ. Limite : uniquement la fenêtre séparée,
