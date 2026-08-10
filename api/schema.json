@@ -1,0 +1,80 @@
+[
+  {
+    "namespace": "calMeeting",
+    "events": [
+      {
+        "name": "onMeetingRequested",
+        "type": "function",
+        "description": "Émis quand l'utilisateur clique sur une des entrées du menu contextuel.",
+        "parameters": [
+          { "name": "message", "type": "any" },
+          { "name": "withKmeet", "type": "boolean" }
+        ]
+      }
+    ],
+    "functions": [
+      {
+        "name": "initContextMenu",
+        "type": "function",
+        "description": "Injecte les deux entrées au premier niveau du menu contextuel des messages.",
+        "async": true,
+        "parameters": [
+          {
+            "name": "labels",
+            "type": "object",
+            "properties": {
+              "labelPlain": { "type": "string" },
+              "labelKmeet": { "type": "string" }
+            }
+          }
+        ]
+      },
+      {
+        "name": "initKmeetButton",
+        "type": "function",
+        "description": "Injecte un bouton kMeet dans la fenêtre d'édition d'événement.",
+        "async": true,
+        "parameters": [
+          {
+            "name": "config",
+            "type": "object",
+            "properties": {
+              "base": { "type": "string", "optional": true },
+              "prefix": { "type": "string", "optional": true },
+              "slugLen": { "type": "integer", "optional": true }
+            }
+          }
+        ]
+      },
+      {
+        "name": "openNewEvent",
+        "type": "function",
+        "description": "Ouvre la fenêtre de création d'événement pré-remplie (titre, description, lieu, participants).",
+        "async": true,
+        "parameters": [
+          {
+            "name": "details",
+            "type": "object",
+            "properties": {
+              "title": { "type": "string", "optional": true },
+              "description": { "type": "string", "optional": true },
+              "location": { "type": "string", "optional": true },
+              "durationMin": { "type": "integer", "optional": true },
+              "attendees": {
+                "type": "array",
+                "optional": true,
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "email": { "type": "string" },
+                    "name": { "type": "string", "optional": true }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

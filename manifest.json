@@ -1,0 +1,40 @@
+{
+  "manifest_version": 2,
+  "name": "Reply with Meeting",
+  "description": "Répondre à un mail par une réunion : événement pré-rempli avec les destinataires en participants, et visio kMeet en un clic.",
+  "version": "0.3.0",
+  "author": "Nicolas Zaoui",
+  "homepage_url": "https://github.com/nikube/replywithmeeting",
+  "applications": {
+    "gecko": {
+      "id": "replywithmeeting@anatoleconseil.com",
+      "strict_min_version": "115.0"
+    }
+  },
+  "icons": {
+    "16": "icon.svg",
+    "32": "icon.svg",
+    "64": "icon.svg"
+  },
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "options_ui": {
+    "page": "options.html"
+  },
+  "permissions": [
+    "messagesRead",
+    "accountsRead",
+    "storage"
+  ],
+  "experiment_apis": {
+    "calMeeting": {
+      "schema": "api/schema.json",
+      "parent": {
+        "scopes": ["addon_parent"],
+        "paths": [["calMeeting"]],
+        "script": "api/implementation.js"
+      }
+    }
+  }
+}

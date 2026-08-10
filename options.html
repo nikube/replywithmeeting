@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: system-ui, sans-serif; font-size: 14px; margin: 12px; min-width: 420px; }
+    fieldset { border: 1px solid #ccc; border-radius: 6px; margin-bottom: 12px; }
+    legend { font-weight: 600; }
+    label { display: grid; grid-template-columns: 180px 1fr; align-items: center; gap: 8px; margin: 6px 0; }
+    label.check { grid-template-columns: auto 1fr; }
+    input[type="text"], input[type="number"] { padding: 3px 6px; }
+    .hint { color: #777; font-size: 12px; margin: 2px 0 8px; }
+    #save { padding: 6px 16px; }
+    #status { margin-left: 10px; color: #2a7a2a; }
+  </style>
+</head>
+<body>
+  <fieldset>
+    <legend>Réunion</legend>
+    <label>Durée par défaut (minutes)
+      <input type="number" id="durationMin" min="5" max="1440" step="5">
+    </label>
+    <label class="check">
+      <input type="checkbox" id="includeBody">
+      <span>Reprendre le corps du mail dans la description</span>
+    </label>
+  </fieldset>
+
+  <fieldset>
+    <legend>kMeet</legend>
+    <label>Préfixe des salles
+      <input type="text" id="kmeetPrefix" placeholder="anatole-">
+    </label>
+    <label>Longueur du suffixe aléatoire
+      <input type="number" id="kmeetSlugLen" min="4" max="32">
+    </label>
+    <label>URL de base
+      <input type="text" id="kmeetBase" placeholder="https://kmeet.infomaniak.com/">
+    </label>
+    <p class="hint">La salle est une URL directe : elle est créée au moment où le premier
+    participant ouvre le lien. Aucun compte ni API nécessaire.</p>
+  </fieldset>
+
+  <button id="save">Enregistrer</button><span id="status"></span>
+  <script src="options.js"></script>
+</body>
+</html>
